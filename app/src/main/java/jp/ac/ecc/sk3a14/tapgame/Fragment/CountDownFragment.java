@@ -67,38 +67,6 @@ public class CountDownFragment extends Fragment {
     }
 
     /**
-     * soundPoolオブジェクトを作成
-     * @param poolMax
-     * @return
-     */
-    private SoundPool buildSoundPool(int poolMax){
-        SoundPool soundPool = null;
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
-            soundPool = new SoundPool(poolMax, AudioManager.STREAM_MUSIC,0);
-        }else{
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build();
-            soundPool = new SoundPool.Builder()
-                    .setAudioAttributes(audioAttributes)
-                    .setMaxStreams(poolMax)
-                    .build();
-        }
-
-        return soundPool;
-    }
-
-    /**
-     * 音源をメモリに読み込み
-     * @param soundPool
-     */
-    private void setSoundID(SoundPool soundPool){
-        mSoundId1 = soundPool.load(getContext(),R.raw.countdown065,1);
-        mSoundId2 = soundPool.load(getContext(),R.raw.countdown066,1);
-    }
-
-    /**
      * 初めてUIを描画するタイミングで呼ばれるメソッド
      * @param inflater
      * @param container
@@ -151,11 +119,7 @@ public class CountDownFragment extends Fragment {
             int counter = 5;
             @Override
             public void run() {
-                try {
-                    Thread.sleep(1000L);
-                }catch (InterruptedException e){
-                    e.printStackTrace();
-                }
+                sleepXms(1000L);
                 for(int i = 0; i < 5;i++) {
                     handler.post(() -> {
                         mCountDownImageView.setText(String.valueOf(counter));
@@ -166,24 +130,33 @@ public class CountDownFragment extends Fragment {
                         }
                     });
                     counter--;
-                    try {
-                        Thread.sleep(1000L);
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
+                    sleepXms(1000L);
                 }
-                //使い終わったメモリの解放
-                mSoundPool.unload(mSoundId1);
-                mSoundPool.unload(mSoundId2);
-                mSoundPool.release();
+                releaseSoudPool(mSoundPool);
                 //自分自身を削除
-                FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
-                transaction.remove(sCountDownFragment);
-                transaction.commit();
+                removeFragment(sCountDownFragment);
                 //ゲームを開始
                 sAttachActivity.startGame();
             }
         };
+    }
+
+    /**
+     * Fragmentを削除
+     * @param removeFragment
+     */
+    private void removeFragment(Fragment removeFragment){
+        FragmentTransaction transaction = getActivity().getSupportFragmentManager().beginTransaction();
+        transaction.remove(removeFragment);
+        transaction.commit();
+    }
+
+    private void sleepXms(long sleepTimeX){
+        try {
+            Thread.sleep(sleepTimeX);
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -197,4 +170,49 @@ public class CountDownFragment extends Fragment {
         super.onDetach();
         sAttachActivity = null;
     }
+
+    /**
+     * soundPoolオブジェクトを作成
+     * @param poolMax
+     * @return
+     */
+    private SoundPool buildSoundPool(int poolMax){
+        SoundPool soundPool = null;
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
+            soundPool = new SoundPool(poolMax, AudioManager.STREAM_MUSIC,0);
+        }else{
+            // 何のために、どのようなものを使うかを設定する属性
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build();
+            // 属性を元に、オブジェクトを作成
+            soundPool = new SoundPool.Builder()
+                    .setAudioAttributes(audioAttributes)
+                    .setMaxStreams(poolMax)
+                    .build();
+        }
+
+        return soundPool;
+    }
+
+    /**
+     * 音源をメモリに読み込み
+     * @param soundPool
+     */
+    private void setSoundID(SoundPool soundPool){
+        mSoundId1 = soundPool.load(getContext(),R.raw.countdown065,1);
+        mSoundId2 = soundPool.load(getContext(),R.raw.countdown066,1);
+    }
+
+    /**
+     * 必要のないSoundPoolのメモリ上からのアンロード
+     * @param soundPool
+     */
+    private void releaseSoudPool(SoundPool soundPool){
+        mSoundPool.unload(mSoundId1);
+        mSoundPool.unload(mSoundId2);
+        mSoundPool.release();
+    }
+
 }
